@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Garden Grove – Medium Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --color-bg: #111714;
+      --color-surface: #1f2922;
+      --color-surface-soft: #263228;
+      --color-border: rgba(229,241,232,0.1);
+      --color-text: #f6f7ef;
+      --color-muted: #9aa594;
+      --color-primary: #74c17f;
+      --color-primary-soft: rgba(116,193,127,0.18);
+      --color-water: #7ac3d9;
+      --color-accent: #efb466;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background: radial-gradient(circle at top, #283727, #111714 55%);
+      color: var(--color-text);
+    }
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1.6rem 1rem 2.6rem;
+    }
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:.9rem;
+      margin-bottom:1.3rem;
+    }
+    h1 {
+      font-family: var(--font-display);
+      margin:0;
+      font-size:1.5rem;
+    }
+    .sub {
+      font-size:.85rem;
+      color:var(--color-muted);
+      margin-top:.2rem;
+    }
+    button {
+      font:inherit;
+      cursor:pointer;
+      border-radius:999px;
+      border:1px solid var(--color-border);
+      padding:.55rem .95rem;
+      background:var(--color-surface-soft);
+      color:var(--color-text);
+    }
+    button.prima
