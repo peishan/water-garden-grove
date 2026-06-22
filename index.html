@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Water Garden Grove – Medium Prototype</title>
+  <title>Water Garden Grove – Unlock Plants</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -105,6 +105,22 @@
     .toast.show { transform:translate(-50%,0); }
     .legend { margin-top:.5rem; font-size:.8rem; color:var(--color-muted); display:flex; flex-wrap:wrap; gap:.6rem; }
     .legend span { display:flex; align-items:center; gap:.2rem; }
+    .collection {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:.7rem;
+      margin-top:.7rem;
+    }
+    .plant-card {
+      padding:.55rem .6rem;
+      border-radius:.8rem;
+      background:var(--color-surface-soft);
+      border:1px solid var(--color-border);
+      font-size:.8rem;
+    }
+    .plant-card .title { font-weight:600; margin-bottom:.15rem; display:flex; align-items:center; gap:.35rem; }
+    .plant-card.locked { opacity:0.45; }
+    .plant-card .req { color:var(--color-muted); font-size:.75rem; }
   </style>
 </head>
 <body>
@@ -174,12 +190,18 @@
         </div>
       </div>
     </section>
+
+    <section class="card" style="margin-top:1rem;" aria-label="Plant collection">
+      <div class="label">Plant collection</div>
+      <div class="stat" id="collectionSummary">Unlock plants by hitting bloom days and building your streak.</div>
+      <div class="collection" id="collectionGrid"></div>
+    </section>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    const STORAGE_KEY = 'water_garden_grove_medium_v1';
+    const STORAGE_KEY = 'water_garden_grove_unlock_v1';
     const todayStr = () => new Date().toISOString().slice(0,10);
 
     const initialState = {
@@ -188,8 +210,27 @@
       coffee: 0,
       base: 'bedroom',
       streak: 0,
-      history: []
+      history: [],
+      unlocked: {}  // plantId -> true
     };
+
+    const PLANTS = [
+      { id: 'snake', name: 'Stillwater Guardian (Snake plant)', icon: '🪴', condition: s => true, desc: 'Always with you in the bedroom base.' },
+      { id: 'begonia', name: 'Glass Jar Muse (Begonia cutting)', icon: '🌿', condition: s => true, desc: 'Always with you in the bedroom base.' },
+      { id: 'pothos', name: 'Golden Pothos', icon: '🌱', condition: s => bloomDays(s) >= 1, req: 'Unlock: 1 bloom day (≥90% goal).' },
+      { id: 'spider', name: 'Spider Plant', icon: '🕷️', condition: s => bloomDays(s) >= 2, req: 'Unlock: 2 bloom days.' },
+      { id: 'zz', name: 'ZZ Plant', icon: '🌿', condition: s => bloomDays(s) >= 3, req: 'Unlock: 3 bloom days.' },
+      { id: 'hoya', name: 'Hoya australis Lisa', icon: '🌸', condition: s => bloomDays(s) >= 5, req: 'Unlock: 5 bloom days.' },
+      { id: 'mint', name: 'Wild Mint', icon: '🍃', condition: s => bloomDays(s) >= 7, req: 'Unlock: 7 bloom days.' },
+      { id: 'umbrella', name: 'Umbrella Plant', icon: '☂️', condition: s => bloomDays(s) >= 10, req: 'Unlock: 10 bloom days.' },
+      { id: 'burle', name: 'Philodendron Burle Marx', icon: '🌿', condition: s => s.streak >= 7, req: 'Unlock: 7-day streak.' },
+      { id: 'agla', name: 'Aglaonema Camouflage', icon: '🪴', condition: s => s.streak >= 14, req: 'Unlock: 14-day streak.' },
+      { id: 'anth', name: 'Anthurium crystallinum', icon: '💎', condition: s => s.streak >= 21, req: 'Unlock: 21-day streak.' }
+    ];
+
+    function bloomDays(state) {
+      return state.history.filter(h => h.water >= state.goal * 0.9).length;
+    }
 
     function loadState() {
       try {
@@ -211,10 +252,12 @@
     const gardenDays = document.getElementById('gardenDays');
     const weekSummary = document.getElementById('weekSummary');
     const goalDaysText = document.getElementById('goalDaysText');
+    const collectionGrid = document.getElementById('collectionGrid');
+    const collectionSummary = document.getElementById('collectionSummary');
     const toast = document.getElementById('toast');
 
     const bedroomPlants = [
-      'Stillwater Guardian (Sansevieria)',
+      'Stillwater Guardian (Snake plant)',
       'Glass Jar Muse (Begonia cutting)'
     ];
     const patioPlants = [
@@ -296,6 +339,58 @@
       weekSummary.textContent = 'Last 7 days · goal 2000 ml';
     }
 
+    function recalcUnlocks() {
+      const bDays = bloomDays(state);
+      const unlockedBefore = { ...state.unlocked };
+      let newUnlocks = 0;
+
+      PLANTS.forEach(p => {
+        const ok = p.condition(state);
+        if (ok && !state.unlocked[p.id]) {
+          state.unlocked[p.id] = true;
+          newUnlocks++;
+        }
+      });
+
+      if (!unlockedBefore['snake']) state.unlocked['snake'] = true;
+      if (!unlockedBefore['begonia']) state.unlocked['begonia'] = true;
+
+      saveState();
+      return newUnlocks;
+    }
+
+    function renderCollection() {
+      collectionGrid.innerHTML = '';
+      const bDays = bloomDays(state);
+      const unlockedCount = PLANTS.filter(p => state.unlocked[p.id]).length;
+      collectionSummary.textContent =
+        'Bloom days: ' + bDays + ' · Unlocked plants: ' + unlockedCount + ' / ' + PLANTS.length + '.';
+
+      PLANTS.forEach(p => {
+        const unlocked = !!state.unlocked[p.id];
+        const card = document.createElement('div');
+        card.className = 'plant-card' + (unlocked ? '' : ' locked');
+        const title = document.createElement('div');
+        title.className = 'title';
+        const iconSpan = document.createElement('span');
+        iconSpan.textContent = unlocked ? p.icon : '🔒';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = unlocked ? p.name : p.name;
+        title.appendChild(iconSpan);
+        title.appendChild(nameSpan);
+        const req = document.createElement('div');
+        req.className = 'req';
+        if (unlocked) {
+          req.textContent = p.desc || 'Unlocked by your consistency.';
+        } else {
+          req.textContent = p.req || 'Always available.';
+        }
+        card.appendChild(title);
+        card.appendChild(req);
+        collectionGrid.appendChild(card);
+      });
+    }
+
     function render() {
       meterFill.style.width = pct() + '%';
       waterText.textContent = state.water + ' / ' + state.goal + ' ml';
@@ -304,6 +399,7 @@
       streakText.textContent = state.streak + ' days';
       renderPlants();
       renderHistory();
+      renderCollection();
       document.querySelectorAll('[data-base]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.base === state.base);
       });
@@ -348,17 +444,25 @@
       } else {
         state.history.push({ date: today, water: state.water, coffee: state.coffee });
       }
-      state.history = state.history.sort((a,b) => a.date.localeCompare(b.date)).slice(-14);
+      state.history = state.history.sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+
       const pctToday = state.water / state.goal;
       if (pctToday >= 0.8) state.streak += 1;
       else state.streak = 0;
+
+      const newUnlocks = recalcUnlocks();
+
       state.water = 0;
       state.coffee = 0;
       saveState();
       render();
-      showToast('New day started. Streak: ' + state.streak + ' days');
+      const msg = newUnlocks > 0
+        ? 'New day started. Streak: ' + state.streak + ' days · ' + newUnlocks + ' plant(s) unlocked!'
+        : 'New day started. Streak: ' + state.streak + ' days';
+      showToast(msg);
     });
 
+    recalcUnlocks();
     render();
   </script>
 </body>
